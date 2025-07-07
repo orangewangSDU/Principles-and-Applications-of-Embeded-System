@@ -1,0 +1,178 @@
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:36:01 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\user;..\lib) DEBUG OBJEC
+                    -TEXTEND
+
+line level    source
+
+   1          #include "stc15.h"
+   2          
+   3          /* ÊýÂë¹ÜÏÔÊ¾µÄÊý×Ö */
+   4          unsigned char xdata nums[10] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8, 0x80, 0x90};//0-9£¬¹²Ñô¼«¶
+             -ÎÂë±í
+   5          
+   6          /* ´æ´¢Êý×Ö */
+   7          unsigned char DigitBuffer[4]; // ÓÃÓÚ´æ´¢4Î»Êý×ÖµÄÃ¿Ò»Î»
+   8          unsigned char DigitIndex = 0;
+   9          unsigned char DigitReady = 0; // ÊÇ·ñ×¼±¸ºÃÏÔÊ¾Êý×Ö
+  10          
+  11          unsigned char count_20ms,count20ms,task_20ms;
+  12          
+  13          /* Õ¹Ê¾Î» */
+  14          unsigned char pos = 0;
+  15          
+  16          void timer0_init(void)          //5ºÁÃë@11.0592MHz
+  17          {
+  18   1              count_20ms = 0;
+  19   1      
+  20   1              AUXR &= 0x7F;                   //¶¨Ê±Æ÷Ê±ÖÓ12TÄ£Ê½
+  21   1              TMOD &= 0xF0;                   //ÉèÖÃ¶¨Ê±Æ÷Ä£Ê½
+  22   1              TL0 = 0x00;                             //ÉèÖÃ¶¨Ê±³õÊ¼Öµ
+  23   1              TH0 = 0xEE;                             //ÉèÖÃ¶¨Ê±³õÊ¼Öµ
+  24   1              TF0 = 0;                                //Çå³ýTF0±êÖ¾
+  25   1              TR0 = 1;                                //¶¨Ê±Æ÷0¿ªÊ¼¼ÆÊ±
+  26   1      
+  27   1              ET0 = 1;                        //ÔÊÐí¶¨Ê±Æ÷ÖÐ¶Ï
+  28   1      }
+  29          
+  30          void timer0_inter_handler(void) interrupt 1
+  31          {
+  32   1              count_20ms ++;
+  33   1              count20ms=1;
+  34   1              if(count_20ms>=25) 
+  35   1              {
+  36   2                      count_20ms = 0;
+  37   2              }
+  38   1              task_20ms = 1;
+  39   1      }
+  40          
+  41          //Ìí¼ÓÕ¹Ê¾º¯Êý
+  42          void DisplayDigits()
+  43          {
+  44   1          // ¶ÎÑ¡ - ËÍ³ö¹²Ñô¼«¶ÎÂë£¨µÍµçÆ½ÁÁ£©
+  45   1          P0 = nums[DigitBuffer[pos]];
+  46   1      
+  47   1              
+  48   1          // Çå³ýËùÓÐÎ»Ñ¡£¨Ï¨ÃðËùÓÐÊýÂë¹Ü£©
+  49   1          P41 = 1;
+  50   1          P42 = 1;
+  51   1          P43 = 1;
+  52   1          P44 = 1;
+  53   1      
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:36:01 PAGE 2   
+
+  54   1          // Î»Ñ¡£¨ÄÄ¸öÊýÂë¹ÜÏÔÊ¾£©
+  55   1          switch(pos)
+  56   1          {
+  57   2              case 0: P41 = 0; break; // µÚ1Î»
+  58   2              case 1: P42 = 0; break; // µÚ2Î»
+  59   2              case 2: P43 = 0; break; // µÚ3Î»
+  60   2              case 3: P44 = 0; break; // µÚ4Î»
+  61   2          }
+  62   1      
+  63   1          // ×¼±¸ÏÂ´ÎÏÔÊ¾ÏÂÒ»Î»
+  64   1          pos++;
+  65   1          if (pos >= 4) pos = 0;
+  66   1      }
+  67          
+  68          
+  69          void main()
+  70          {
+  71   1      
+  72   1              /* LED-IO¼Ä´æÆ÷³õÊ¼»¯ */
+  73   1              P2M0 = 0xff;
+  74   1              P2M1 = 0x00;
+  75   1              P4M0 = 0xff;  // ½«P4¿ÚÉèÖÃÎªÍÆÍìÊä³ö
+  76   1              P4M1 = 0x00;
+  77   1              P0M0 = 0xff;  // ½«P0¿ÚÉèÖÃÎªÍÆÍìÊä³ö
+  78   1              P0M1 = 0x00;
+  79   1      
+  80   1              
+  81   1              /* ´®¿Ú¼Ä´æÆ÷³õÊ¼»¯ */
+  82   1              SCON = 0x50;            //8Î»Êý¾Ý,¿É±ä²¨ÌØÂÊ
+  83   1              AUXR |= 0x40;           //¶¨Ê±Æ÷Ê±ÖÓ1TÄ£Ê½
+  84   1              AUXR &= 0xFE;           //´®¿Ú1Ñ¡Ôñ¶¨Ê±Æ÷1Îª²¨ÌØÂÊ·¢ÉúÆ÷£¬²¨ÌØÂÊ=Òç³öÂÊ/4
+  85   1              TMOD &= 0x0F;           //ÉèÖÃ¶¨Ê±Æ÷Ä£Ê½
+  86   1              TL1 = 0xE0;                     //ÉèÖÃ¶¨Ê±³õÊ¼Öµ£¬9600bps
+  87   1              TH1 = 0xFE;                     //ÉèÖÃ¶¨Ê±³õÊ¼Öµ£¬f=11.0592MHz
+  88   1              ET1 = 0;                        //½ûÖ¹¶¨Ê±Æ÷1ÖÐ¶Ï
+  89   1              ES = 1;                         //ÔÊÐí´®¿Ú1ÖÐ¶Ï
+  90   1              TR1 = 1;                        //¶¨Ê±Æ÷1¿ªÊ¼¼ÆÊ±
+  91   1              
+  92   1              timer0_init();  //¶¨Ê±Æ÷0³õÊ¼»¯£¬¼ÓÔÚ´®¿Ú³õÊ¼»¯Ö®ºó
+  93   1              
+  94   1              EA=1;                           //¿ªÈ«¾ÖÖÐ¶Ï
+  95   1              
+  96   1              while (1) 
+  97   1              {
+  98   2                      if (task_20ms) 
+  99   2                      {
+ 100   3                              task_20ms = 0;
+ 101   3                              if (DigitReady) 
+ 102   3                              {
+ 103   4                                      DisplayDigits();  // Ã¿20msË¢ÐÂÒ»´ÎÊýÂë¹Ü
+ 104   4                              }
+ 105   3                      }
+ 106   2              }
+ 107   1      
+ 108   1      }
+ 109          
+ 110          void Uart_Int(void) interrupt 4
+ 111          {
+ 112   1              unsigned char RxData;
+ 113   1      
+ 114   1              //ÐÞ¸ÄÒÔÏÂÄÚÈÝ
+ 115   1              if (RI) 
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:36:01 PAGE 3   
+
+ 116   1              {
+ 117   2                      RI = 0;
+ 118   2                      RxData = SBUF;
+ 119   2      
+ 120   2                      // ÅÐ¶ÏÊÇ·ñÎªÊý×Ö×Ö·û '0'~'9'
+ 121   2                      if (RxData >= '0' && RxData <= '9') 
+ 122   2                      {
+ 123   3                              if (DigitIndex < 4)
+ 124   3                              {
+ 125   4                                      DigitBuffer[DigitIndex] = RxData - '0'; // ×ª»»ÎªÊý×Ö
+ 126   4                                      DigitIndex++;
+ 127   4                              }
+ 128   3                              if (DigitIndex == 4) 
+ 129   3                              {
+ 130   4                                      DigitReady = 1; // ±íÊ¾Êý×ÖÒÑ½ÓÊÕÍê³É
+ 131   4                                      DigitIndex = 0; // ×¼±¸ÏÂ´Î½ÓÊÕ
+ 132   4                              }
+ 133   3                      } 
+ 134   2                      else 
+ 135   2                      {
+ 136   3                              DigitIndex = 0; // Èô²»ÊÇÊý×Ö£¬Çå¿ÕÖØÐÂ¿ªÊ¼
+ 137   3                      }
+ 138   2              }
+ 139   1      }
+ 140          
+ 141          
+ 142          
+ 143          
+ 144          
+ 145          
+ 146          
+ 147          
+ 148          
+ 149          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    311    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     20    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

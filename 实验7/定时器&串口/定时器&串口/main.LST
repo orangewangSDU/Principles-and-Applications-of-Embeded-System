@@ -1,0 +1,297 @@
+C51 COMPILER V9.55   MAIN                                                                  05/22/2025 09:47:40 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\user;..\lib) DEBUG OBJEC
+                    -TEXTEND
+
+line level    source
+
+   1          #include "stc15.h"
+   2          
+   3          /* 数码管段码，共阳极（低电平亮） */
+   4          unsigned char xdata nums[10] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
+   5                                          0x92, 0x82, 0xF8, 0x80, 0x90};
+   6          
+   7          /* 显示缓冲区 */
+   8          unsigned char DigitBuffer[4] = {0, 0, 0, 0};
+   9          unsigned char DigitReady = 1;
+  10          
+  11          unsigned char count_20ms = 0;
+  12          unsigned char task_20ms = 0;
+  13          
+  14          unsigned char pos = 0;
+  15          unsigned int timer_set = 0;    // 设置的定时时间（秒）
+  16          unsigned int timer_count = 0;  // 当前计时值（秒）
+  17          unsigned char flash_count = 0; // 闪烁计数
+  18          unsigned char flash_state = 1; // 闪烁状态（1表示显示）
+  19          
+  20          /* 按键状态 */
+  21          bit key1_pressed = 0;
+  22          bit key2_pressed = 0;
+  23          bit key3_pressed = 0;
+  24          bit timer_running = 0;         // 计时器运行标志
+  25          bit timer_finished = 0;        // 计时完成标志
+  26          
+  27          /* 动态扫描显示 */
+  28          void DisplayDigits()
+  29          {
+  30   1          // 关闭所有位选
+  31   1          P41 = 1;
+  32   1          P42 = 1;
+  33   1          P43 = 1;
+  34   1          P44 = 1;
+  35   1      
+  36   1          // 如果计时完成且处于闪烁关闭状态，不显示
+  37   1          if(timer_finished && !flash_state)
+  38   1          {
+  39   2              P0 = 0xFF;  // 关闭所有段
+  40   2          }
+  41   1          else
+  42   1          {
+  43   2              // 根据状态显示内容
+  44   2              if(timer_finished)
+  45   2              {
+  46   3                  // 显示8888
+  47   3                  P0 = nums[8];
+  48   3              }
+  49   2              else
+  50   2              {
+  51   3                  // 正常显示当前数字
+  52   3                  P0 = nums[DigitBuffer[pos]];
+  53   3              }
+  54   2          }
+C51 COMPILER V9.55   MAIN                                                                  05/22/2025 09:47:40 PAGE 2   
+
+  55   1      
+  56   1          // 位选
+  57   1          switch(pos)
+  58   1          {
+  59   2              case 0: P41 = 0; break;
+  60   2              case 1: P42 = 0; break;
+  61   2              case 2: P43 = 0; break;
+  62   2              case 3: P44 = 0; break;
+  63   2          }
+  64   1      
+  65   1          pos++;
+  66   1          if (pos >= 4) pos = 0;
+  67   1      }
+  68          
+  69          /* 定时器0初始化 - 5ms */
+  70          void timer0_init(void)
+  71          {
+  72   1          AUXR &= 0x7F;    // 12T模式
+  73   1          TMOD &= 0xF0;    // 清除T0控制位
+  74   1          TL0 = 0x00;      
+  75   1          TH0 = 0xEE;      
+  76   1          TF0 = 0;
+  77   1          TR0 = 1;         // 启动T0
+  78   1          ET0 = 1;         // 允许T0中断
+  79   1      }
+  80          
+  81          /* 定时器0中断函数 - 每5ms 用于检测按键状态*/
+  82          void timer0_inter_handler(void) interrupt 1
+  83          {
+  84   1          TL0 = 0x00;      
+  85   1          TH0 = 0xEE; 
+  86   1          
+  87   1          count_20ms++;
+  88   1          if (count_20ms >= 4) // 20ms任务
+  89   1          {
+  90   2              count_20ms = 0;
+  91   2              task_20ms = 1;
+  92   2          }
+  93   1      
+  94   1          // 数码管动态刷新（5ms扫描一次）
+  95   1          DisplayDigits();
+  96   1      }
+  97          
+  98          /* 定时器1初始化 - 50ms */
+  99          void timer1_init(void)
+ 100          {
+ 101   1          AUXR &= 0xBF;    // 12T模式
+ 102   1          TMOD &= 0x0F;    // 清除T1控制位
+ 103   1          TL1 = 0xB0;      // 50ms定时
+ 104   1          TH1 = 0x3C;      
+ 105   1          TF1 = 0;
+ 106   1          TR1 = 0;         // 初始不启动
+ 107   1          ET1 = 1;         // 允许T1中断
+ 108   1      }
+ 109          
+ 110          /* 定时器1中断函数 - 50ms */
+ 111          void timer1_inter_handler(void) interrupt 3
+ 112          {
+ 113   1          TL1 = 0xB0;      
+ 114   1          TH1 = 0x3C; 
+ 115   1          
+ 116   1          if(timer_running)
+C51 COMPILER V9.55   MAIN                                                                  05/22/2025 09:47:40 PAGE 3   
+
+ 117   1          {
+ 118   2              static unsigned char count_1s = 0;
+ 119   2              count_1s++;
+ 120   2              
+ 121   2              if(count_1s >= 20)  // 1秒到，20个50ms就是1s
+ 122   2              {
+ 123   3                  count_1s = 0;
+ 124   3                  if(timer_count > 0)
+ 125   3                  {
+ 126   4                      timer_count--;
+ 127   4                      
+ 128   4                      // 更新显示
+ 129   4                      DigitBuffer[0] = timer_count / 1000 % 10;
+ 130   4                      DigitBuffer[1] = timer_count / 100 % 10;
+ 131   4                      DigitBuffer[2] = timer_count / 10 % 10;
+ 132   4                      DigitBuffer[3] = timer_count % 10;
+ 133   4                  }
+ 134   3                  else
+ 135   3                  {
+ 136   4                      timer_running = 0;
+ 137   4                      timer_finished = 1;
+ 138   4                      TR1 = 1;  // 继续运行用于闪烁
+ 139   4                  }
+ 140   3              }
+ 141   2          }
+ 142   1          else if(timer_finished)
+ 143   1          {
+ 144   2              flash_count++;
+ 145   2              if(flash_count >= 10)  // 0.5s切换一次（10*50ms）
+ 146   2              {
+ 147   3                  flash_count = 0;
+ 148   3                  flash_state = !flash_state;
+ 149   3              }
+ 150   2          }
+ 151   1      }
+ 152          
+ 153          /* 更新显示缓冲区 */
+ 154          void UpdateDisplay(void)
+ 155          {
+ 156   1          DigitBuffer[0] = timer_count / 1000 % 10;
+ 157   1          DigitBuffer[1] = timer_count / 100 % 10;
+ 158   1          DigitBuffer[2] = timer_count / 10 % 10;
+ 159   1          DigitBuffer[3] = timer_count % 10;
+ 160   1      }
+ 161          
+ 162          /* 主函数 */
+ 163          void main()
+ 164          {
+ 165   1          /* IO初始化 */
+ 166   1          P2M0 = 0xff; P2M1 = 0x00;
+ 167   1          P4M0 = 0xff; P4M1 = 0x00;
+ 168   1          P0M0 = 0xff; P0M1 = 0x00;
+ 169   1      
+ 170   1          /* 数码管控制IO默认全亮 */
+ 171   1          P41 = 0; 
+ 172   1          P42 = 0; 
+ 173   1          P43 = 0; 
+ 174   1          P44 = 0;
+ 175   1      
+ 176   1          timer0_init();  // 定时器0初始化 - 5ms
+ 177   1          timer1_init();  // 定时器1初始化 - 50ms
+ 178   1          EA = 1;         // 开启总中断
+C51 COMPILER V9.55   MAIN                                                                  05/22/2025 09:47:40 PAGE 4   
+
+ 179   1      
+ 180   1          // 初始显示0000
+ 181   1          UpdateDisplay();
+ 182   1      
+ 183   1          while (1)
+ 184   1          {
+ 185   2              if (task_20ms)
+ 186   2              {
+ 187   3                  task_20ms = 0;
+ 188   3      
+ 189   3                  // 检测K1是否按下 (P1.2)
+ 190   3                  if ((P1 & 0x04) == 0)
+ 191   3                  {
+ 192   4                      if (!key1_pressed)
+ 193   4                      {
+ 194   5                          key1_pressed = 1;
+ 195   5                      }
+ 196   4                  }
+ 197   3                  else // 松手
+ 198   3                  {
+ 199   4                      if (key1_pressed)
+ 200   4                      {
+ 201   5                          key1_pressed = 0;
+ 202   5                          if(!timer_running && !timer_finished)  // 只有在非计时状态才能调整时间
+ 203   5                          {
+ 204   6                              timer_set++;
+ 205   6                              if(timer_set > 9999) timer_set = 9999; // 计时器上限9999
+ 206   6                              timer_count = timer_set;
+ 207   6                              UpdateDisplay();
+ 208   6                          }
+ 209   5                      }
+ 210   4                  }
+ 211   3      
+ 212   3                  // 检测K2是否按下 (P1.3)
+ 213   3                  if ((P1 & 0x08) == 0)
+ 214   3                  {
+ 215   4                      if (!key2_pressed)
+ 216   4                      {
+ 217   5                          key2_pressed = 1;
+ 218   5                      }
+ 219   4                  }
+ 220   3                  else // 松手
+ 221   3                  {
+ 222   4                      if (key2_pressed)
+ 223   4                      {
+ 224   5                          key2_pressed = 0;
+ 225   5                          if(!timer_running && !timer_finished)  // 只有在非计时状态才能调整时间
+ 226   5                          {
+ 227   6                              if(timer_set > 0) timer_set--;
+ 228   6                              timer_count = timer_set;
+ 229   6                              UpdateDisplay();
+ 230   6                          }
+ 231   5                      }
+ 232   4                  }
+ 233   3      
+ 234   3                  // 检测K3是否按下 (P1.4)
+ 235   3                  if ((P1 & 0x10) == 0)
+ 236   3                  {
+ 237   4                      if (!key3_pressed)
+ 238   4                      {
+ 239   5                          key3_pressed = 1;
+ 240   5                      }
+C51 COMPILER V9.55   MAIN                                                                  05/22/2025 09:47:40 PAGE 5   
+
+ 241   4                  }
+ 242   3                  else // 松手
+ 243   3                  {
+ 244   4                      if (key3_pressed)
+ 245   4                      {
+ 246   5                          key3_pressed = 0;
+ 247   5                          if(timer_finished)
+ 248   5                          {
+ 249   6                              // 如果计时完成，再次按下K3重新开始
+ 250   6                              timer_finished = 0;
+ 251   6                              flash_state = 1;
+ 252   6                              timer_count = timer_set;
+ 253   6                              UpdateDisplay();
+ 254   6                          }
+ 255   5                          
+ 256   5                          if(timer_count > 0 && !timer_running)
+ 257   5                          {
+ 258   6                              timer_running = 1;
+ 259   6                              TR1 = 1;  // 启动定时器1
+ 260   6                          }
+ 261   5                      }
+ 262   4                  }
+ 263   3              }
+ 264   2          }
+ 265   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    761    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     25    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      5    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

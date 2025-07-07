@@ -1,0 +1,62 @@
+C51 COMPILER V9.55   ADC                                                                   05/15/2025 16:36:23 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN adc.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE adc.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\user;..\lib) DEBUG OBJECT
+                    -EXTEND
+
+line level    source
+
+   1          #include <stc15.h>
+   2          #include "dataType.h"
+   3          
+   4          
+   5                                                                          //ADC寄存器
+   6          #define ADC_POWER               0x80
+   7          #define ADC_SPEED(x)    (x<<5)  //AD转换速度，0-3
+   8          #define ADC_START               0x08    //启动AD转换
+   9          #define ADC_FLAG                0x10    //转换结束标志
+  10          
+  11          u8      adc_ch;                         //当前转换的ADC通道
+  12          u16 adcRes[2];                  //转换结果
+  13          
+  14          void adc_init()
+  15          {
+  16   1              adc_ch = 0;
+  17   1              adcRes[0] = 0;
+  18   1              adcRes[1] = 0;
+  19   1              
+  20   1              P1ASF = 0x03;   //P1.0、P1.1作为A/D使用
+  21   1              ADC_RES = 0;    //转换结果高8位，复位值为0，可不清零
+  22   1              ADC_RESL = 0;   //转换结果低8位，复位值为0，可不清零
+  23   1              ADC_CONTR = ADC_POWER|ADC_SPEED(0)|ADC_START|adc_ch;
+  24   1              EADC = 1;
+  25   1      }
+  26          
+  27          void adc_handle() interrupt 5
+  28          {
+  29   1              ADC_CONTR &= ~ADC_FLAG; //将ADC_FLAG位清零
+  30   1              adcRes[adc_ch] = ADC_RES;//转换结果高8位
+  31   1              adcRes[adc_ch] <<= 2;
+  32   1              adcRes[adc_ch] |= ADC_RESL&0x03;
+  33   1              adc_ch ++ ;
+  34   1              if(adc_ch>=2) {
+  35   2                      adc_ch = 0;
+  36   2              }
+  37   1              ADC_CONTR = ADC_POWER|ADC_SPEED(1)|ADC_START|adc_ch;
+  38   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    190    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      5    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

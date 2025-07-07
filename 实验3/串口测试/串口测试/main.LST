@@ -1,0 +1,119 @@
+C51 COMPILER V9.55   MAIN                                                                  05/08/2025 08:37:41 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\user;..\lib) DEBUG OBJEC
+                    -TEXTEND
+
+line level    source
+
+   1          #include "stc15.h"
+   2          
+   3          /* 串口发送变量 */
+   4          unsigned char TxTail;
+   5          unsigned char TxPtr;
+   6          unsigned char TxBuff[5];
+   7          
+   8          /* 接受hello字符串 */
+   9          unsigned char HelloBuf[5];     //接收缓冲区
+  10          unsigned char HelloIndex = 0;  //索引变量
+  11          
+  12          
+  13          void main()
+  14          {
+  15   1      
+  16   1              /* LED-IO寄存器初始化 */
+  17   1              P2M0 = 0xff;
+  18   1              P2M1 = 0x00;
+  19   1      
+  20   1              /* 变量初始化 */
+  21   1              TxPtr=0;
+  22   1              TxTail=0;
+  23   1              
+  24   1              /* 串口寄存器初始化 */
+  25   1              SCON = 0x50;            //8位数据,可变波特率
+  26   1              AUXR |= 0x40;           //定时器时钟1T模式
+  27   1              AUXR &= 0xFE;           //串口1选择定时器1为波特率发生器，波特率=溢出率/4
+  28   1              TMOD &= 0x0F;           //设置定时器模式
+  29   1              TL1 = 0xE0;                     //设置定时初始值，9600bps
+  30   1              TH1 = 0xFE;                     //设置定时初始值，f=11.0592MHz
+  31   1              ET1 = 0;                        //禁止定时器1中断
+  32   1              ES = 1;                         //允许串口1中断
+  33   1              TR1 = 1;                        //定时器1开始计时
+  34   1              
+  35   1              EA=1;                           //开全局中断
+  36   1              
+  37   1              while(1) {}
+  38   1      }
+  39          
+  40          
+  41          
+  42          void Uart_Int(void) interrupt 4
+  43          {
+  44   1              unsigned char RxData;
+  45   1      
+  46   1              if(RI) 
+  47   1              {
+  48   2                      RI = 0;
+  49   2                      RxData = SBUF;
+  50   2                      // 检查是否匹配 "hello"
+  51   2                      if ((RxData == "hello"[HelloIndex]) && HelloIndex < 5) //依次比较hello中的每个字符是否和RxData中的字符相
+             -等
+  52   2                      {
+  53   3                              HelloBuf[HelloIndex++] = RxData;
+C51 COMPILER V9.55   MAIN                                                                  05/08/2025 08:37:41 PAGE 2   
+
+  54   3                              if (HelloIndex == 5) 
+  55   3                              {
+  56   4                                      // 匹配成功，准备发送 "world"
+  57   4                                      TxBuff[0] = 'w';
+  58   4                                      TxBuff[1] = 'o';
+  59   4                                      TxBuff[2] = 'r';
+  60   4                                      TxBuff[3] = 'l';
+  61   4                                      TxBuff[4] = 'd';
+  62   4                                      TxTail = 5;
+  63   4                                      TxPtr = 0;
+  64   4                                      SBUF = TxBuff[TxPtr];
+  65   4                                      HelloIndex = 0; // 重新准备下一次接收
+  66   4                              }
+  67   3                      } 
+  68   2                      else 
+  69   2                      {
+  70   3                              HelloIndex = 0; // 匹配失败，重新开始
+  71   3                      }
+  72   2              }
+  73   1              if(TI) 
+  74   1              {
+  75   2                      TI = 0;
+  76   2                      TxPtr ++ ;
+  77   2                      if(TxPtr < TxTail) 
+  78   2                      {
+  79   3                              SBUF = TxBuff[TxPtr];
+  80   3                      }
+  81   2              }
+  82   1      }
+  83          
+  84          
+  85          
+  86          
+  87          
+  88          
+  89          
+  90          
+  91          
+  92          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    210    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =     13    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

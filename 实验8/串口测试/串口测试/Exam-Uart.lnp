@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"main.obj" 
+TO "Exam-Uart" 
+RAMSIZE(256) 

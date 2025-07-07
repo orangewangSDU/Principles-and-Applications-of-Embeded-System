@@ -1,0 +1,6 @@
+"main.obj",
+"timer.obj",
+"uart.obj",
+"adc.obj" 
+TO "test" 
+PRINT(".\Listings\test.m51") RAMSIZE(256) 

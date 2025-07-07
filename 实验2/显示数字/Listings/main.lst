@@ -1,0 +1,182 @@
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:18:48 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\main.lst)
+
+line level    source
+
+   1          #include <stc15.h>              //STCµ¥Æ¬»úÍ·ÎÄ¼þ
+   2          #include <intrins.h>    //ÄÚº¬nopÖ¸Áî£¬ÓÃÓÚÑÓÊ±
+   3          #include <absacc.h>             //¾ø¶ÔµØÖ··ÃÎÊ
+   4          
+   5          #include "dataType.h"   //#include <>£¬Ö»ÔÚÏµÍ³Ö¸¶¨ÎÄ¼þ¼ÐËÑË÷¸ÃÍ·ÎÄ¼þ£¬ÏµÍ³Í·ÎÄ¼þÒ»°ã²ÉÓÃ#include <>
+   6                                                          //#include ""£¬ÏÈÔÚµ±Ç°¹¤³ÌËùÔÚÎÄ¼þ¼ÐËÑË÷¸ÃÍ·ÎÄ¼þ£¬ÈôÕÒ²»µ½ÔÙµ½ÏµÍ³Ö¸¶¨ÎÄ¼þ¼ÐËÑË÷¡£ÓÃ»§×Ô¶¨ÒåÍ·ÎÄ¼þÒ
+             -»°ãÓÃ#include ""
+   7          
+   8          //½«Êó±êÒÆ¶¯µ½Í·ÎÄ¼þËùÔÚÐÐ£¬µãÏÂ×ó¼ü£¬È»ºóÊó±êÓÒ¼ü£¬Ñ¡Ôñ"Open document <xxx.h>"¿É´ò¿ª¸ÃÍ·ÎÄ¼þ
+   9          //Í·ÎÄ¼þ´ò¿ªºó£¬½«Êó±ê¼ýÍ·ÒÆ¶¯ÖÁ¸ÃÍ·ÎÄ¼þÑ¡Ïî¿¨£¬µãÊó±êÓÒ¼ü£¬Ñ¡Ôñ"Open Containing Folder"£¬¿É¶¨Î»Í·ÎÄ¼þËùÔÚ
+             -ÎÄ¼þ¼Ð
+  10          //×¢ÊÍÈÝÒ×³öÏÖÂÒÂë£¬µã»÷¡°Edit¡±---¡·¡°Configuration¡±---¡·General Editor Settings£ºEncoding---¡·Chinese G
+             -B2312 (Simplified)
+  11          
+  12          #define Tx_Array_Size   32
+  13          #define Rx_Array_Size   32
+  14          
+  15          u8 Tx_Buffer[Tx_Array_Size];
+  16          u8 Tx_Ptr,Tx_Tail,Rx_Ptr;
+  17          
+  18          //float code PI=3.1415926;
+  19          
+  20          u8 xdata nums[10]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90};//Æä¶þ½øÖÆÖ¸Ã÷ÁËÃ¿¸öÊý×ÖÖÐÓ¦¸ÃµãÁÁÄÄ
+             -Ò»¶ÎÊýÂë¹Ü
+  21          int idx=0;
+  22          int now=0;//Ë÷Òýµ½numsÊý×éÖÐµÄ¾ßÌåÊý
+  23          
+  24          int mode = 0; //¶¨Òåµ±Ç°ÊýÂë¹ÜµÄ×´Ì¬Êý×Ö
+  25          
+  26          u16 xdata array[4]={0x1122,0x3344,0x5566,0x7788};//Êý×é¸³³õÖµ£¬´æ´¢Ê±Êý¾Ý¸ß×Ö½ÚÔÚµÍµØÖ·
+  27          u8 *ptr;
+  28          //u16 *ptr;
+  29          
+  30          extern u8 task_500ms;
+  31          extern u8 task_20ms;
+  32          extern void timer0_init(void);  //20ºÁÃë@11.0592MHz
+  33          
+  34          extern void adc_init();
+  35          extern u16 adcRes[2];                   //×ª»»½á¹û
+  36          
+  37          
+  38          void Delay20ms(void)    //@11.0592MHz
+  39          {
+  40   1              unsigned char data i, j;
+  41   1      
+  42   1              i = 216;
+  43   1              j = 37;
+  44   1              do
+  45   1              {
+  46   2                      while (--j);
+  47   2              } while (--i);
+  48   1      }
+  49          
+  50          
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:18:48 PAGE 2   
+
+  51          
+  52                  
+  53          void uart_init()//´®¿Ú³õÊ¼»¯
+  54          {
+  55   1              Rx_Ptr = 0;                     //±äÁ¿³õÊ¼»¯
+  56   1                                                      // SFRÅäÖÃ£¬9600bps
+  57   1              SCON = 0x50;            //8Î»Êý¾Ý,¿É±ä²¨ÌØÂÊ
+  58   1              AUXR |= 0x40;           //¶¨Ê±Æ÷Ê±ÖÓ1TÄ£Ê½
+  59   1              AUXR &= 0xFE;           //´®¿Ú1Ñ¡Ôñ¶¨Ê±Æ÷1Îª²¨ÌØÂÊ·¢ÉúÆ÷£¬²¨ÌØÂÊ=Òç³öÂÊ/4
+  60   1              TMOD &= 0x0F;           //ÉèÖÃ¶¨Ê±Æ÷Ä£Ê½
+  61   1              TL1 = 0xE0;                     //ÉèÖÃ¶¨Ê±³õÊ¼Öµ£¬f=11.0592MHz
+  62   1              TH1 = 0xFE;                     //ÉèÖÃ¶¨Ê±³õÊ¼Öµ
+  63   1              ET1 = 0;                        //½ûÖ¹¶¨Ê±Æ÷1ÖÐ¶Ï
+  64   1              ES = 1;                         //ÔÊÐí´®¿Ú1ÖÐ¶Ï
+  65   1              TR1 = 1;                        //¶¨Ê±Æ÷1¿ªÊ¼¼ÆÊ±
+  66   1      }
+  67          
+  68          
+  69          void main()//Ö÷³ÌÐò
+  70          {
+  71   1      
+  72   1              P2M0 = 0xff;
+  73   1              P2M1 = 0x00;
+  74   1          
+  75   1          P0M0 = 0xff;
+  76   1          P0M1 = 0x00; 
+  77   1      
+  78   1          P4M0 = 0xff;
+  79   1          P4M1 = 0x00; 
+  80   1          
+  81   1          P1M0 = 0xff;
+  82   1          P1M1 = 0x00; 
+  83   1      
+  84   1              timer0_init();  //¶¨Ê±Æ÷0³õÊ¼»¯
+  85   1              uart_init();    //´®¿Ú³õÊ¼»¯
+  86   1              adc_init();             //ADC³õÊ¼»¯
+  87   1              
+  88   1          P41=0;//0±íÊ¾ÁÁ£¬ËÄ¸öÊýÂëÊ¼ÖÕ¶¼ÁÁ£¬ËùÒÔÖ±½ÓÈ«ÖÃÁã¼´¿É
+  89   1          P42=0;
+  90   1          P43=0;
+  91   1          P44=0;
+  92   1              EA=1;//¿ªÈ«¾ÖÖÐ¶Ï
+  93   1              
+  94   1              while(1)
+  95   1              {       
+  96   2             //Ê×ÏÈ¼ì²âK1K2K3K4ÄÄ¸ö°´¼ü±»°´ÏÂ£¬·½·¨ÊÇ¿´P1µÄÖµ
+  97   2             if (P1==0xdf && mode==0)//11011111->11 0111 11->¸ù¾Ý0111¿´³öK4ÖÃÎª0£¬ËµÃ÷K4°´ÏÂÈ¥ÁË
+  98   2             {
+  99   3                 Delay20ms();//È¥¶¶¶¯
+ 100   3                 if(P1==0xdf)
+ 101   3                 {
+ 102   4                     mode=4;
+ 103   4                     now=4;
+ 104   4                 }
+ 105   3             }
+ 106   2                  
+ 107   2             if (P1==0xef && mode==0)
+ 108   2             {
+ 109   3                 Delay20ms();
+ 110   3                 if(P1==0xef)
+ 111   3                 {
+ 112   4                     mode=3;
+C51 COMPILER V9.55   MAIN                                                                  05/15/2025 10:18:48 PAGE 3   
+
+ 113   4                                 now=3;
+ 114   4                 }
+ 115   3             }
+ 116   2             if (P1==0xf7 && mode==0)
+ 117   2             {
+ 118   3                 Delay20ms();
+ 119   3                 if(P1==0xf7)
+ 120   3                 {
+ 121   4                     mode=2;
+ 122   4                                 now=2;
+ 123   4                 }
+ 124   3             }
+ 125   2                 if (P1==0xfb && mode==0)
+ 126   2             {
+ 127   3                 Delay20ms();
+ 128   3                 if(P1==0xfb)
+ 129   3                 {
+ 130   4                     mode=1;
+ 131   4                     now=1;
+ 132   4                 }
+ 133   3             }
+ 134   2                 if (P1==0xff && mode!=0)
+ 135   2             {
+ 136   3                 Delay20ms();
+ 137   3                 if(P1==0xff)
+ 138   3                 {
+ 139   4                     mode=0;
+ 140   4                 }
+ 141   3             }
+ 142   2                  
+ 143   2              
+ 144   2             if(task_20ms)//Ã¿¸ô20ms½øÐÐÒ»´ÎË¢ÐÂ
+ 145   2             {
+ 146   3                 task_20ms = 0;
+ 147   3                 P0=nums[now];
+ 148   3             }
+ 149   2          }
+ 150   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    308    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     62    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
