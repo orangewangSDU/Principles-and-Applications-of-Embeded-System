@@ -1,0 +1,57 @@
+C51 COMPILER V9.55   MAIN                                                                  06/20/2025 03:12:42 PAGE 1   
+
+
+C51 COMPILER V9.55, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\main.lst)
+
+line level    source
+
+   1          #include <stc15.h>              //STCµ¥Æ¬»úÍ·ÎÄ¼þ
+   2          #include <intrins.h>    //ÄÚº¬nopÖ¸Áî£¬ÓÃÓÚÑÓÊ±
+   3          #include <absacc.h>             //¾ø¶ÔµØÖ··ÃÎÊ
+   4          
+   5          #include "dataType.h"   //#include <>£¬Ö»ÔÚÏµÍ³Ö¸¶¨ÎÄ¼þ¼ÐËÑË÷¸ÃÍ·ÎÄ¼þ£¬ÏµÍ³Í·ÎÄ¼þÒ»°ã²ÉÓÃ#include <>
+   6                                                          //#include ""£¬ÏÈÔÚµ±Ç°¹¤³ÌËùÔÚÎÄ¼þ¼ÐËÑË÷¸ÃÍ·ÎÄ¼þ£¬ÈôÕÒ²»µ½ÔÙµ½ÏµÍ³Ö¸¶¨ÎÄ¼þ¼ÐËÑË÷¡£ÓÃ»§×Ô¶¨ÒåÍ·ÎÄ¼þÒ
+             -»°ãÓÃ#include ""
+   7          
+   8          //½«Êó±êÒÆ¶¯µ½Í·ÎÄ¼þËùÔÚÐÐ£¬µãÏÂ×ó¼ü£¬È»ºóÊó±êÓÒ¼ü£¬Ñ¡Ôñ"Open document <xxx.h>"¿É´ò¿ª¸ÃÍ·ÎÄ¼þ
+   9          //Í·ÎÄ¼þ´ò¿ªºó£¬½«Êó±ê¼ýÍ·ÒÆ¶¯ÖÁ¸ÃÍ·ÎÄ¼þÑ¡Ïî¿¨£¬µãÊó±êÓÒ¼ü£¬Ñ¡Ôñ"Open Containing Folder"£¬¿É¶¨Î»Í·ÎÄ¼þËùÔÚ
+             -ÎÄ¼þ¼Ð
+  10          //×¢ÊÍÈÝÒ×³öÏÖÂÒÂë£¬µã»÷¡°Edit¡±---¡·¡°Configuration¡±---¡·General Editor Settings£ºEncoding---¡·Chinese G
+             -B2312 (Simplified)
+  11          
+  12          #define Tx_Array_Size   32
+  13          #define Rx_Array_Size   32
+  14          
+  15          u8 Tx_Buffer[Tx_Array_Size];
+  16          u8 Tx_Ptr,Tx_Tail,Rx_Ptr;
+  17          
+  18          extern void timer0_init(void);  //20ºÁÃë@11.0592MHz
+  19          
+  20          
+  21          void main()//Ö÷³ÌÐò
+  22          {
+  23   1      
+  24   1              P2M0 = 0xff;  //¿ØÖÆÊä³öÄ£Ê½£¬Èí¼þÉú³É
+  25   1              P2M1 = 0x00;  //¿ØÖÆÊä³öÄ£Ê½£¬Èí¼þÉú³É
+  26   1          timer0_init();
+  27   1              EA=1;
+  28   1              while(1);
+  29   1      
+  30   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     13    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     35    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

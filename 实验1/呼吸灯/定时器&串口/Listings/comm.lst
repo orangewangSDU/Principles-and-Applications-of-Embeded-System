@@ -1,0 +1,47 @@
+C51 COMPILER V9.56.0.0   COMM                                                              03/08/2023 12:02:14 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE COMM
+OBJECT MODULE PLACED IN comm.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE comm.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\comm
+                    -.lst) TABS(2)
+
+line level    source
+
+   1          #include <stc15.h>    //STC单片机头文件
+   2          #include "dataType.h" //自定义
+   3          
+   4          extern u8 Tx_Buffer[];
+   5          extern u8 Tx_Ptr,Tx_Tail,Rx_Ptr;
+   6          
+   7          void uart_handler(void) interrupt 4//串口中断服务程序
+   8          {
+   9   1        u8 rx_data;
+  10   1      
+  11   1        if(RI) {
+  12   2          RI = 0;
+  13   2          rx_data = SBUF;
+  14   2        }
+  15   1      
+  16   1        if(TI) {
+  17   2          TI = 0;
+  18   2          Tx_Ptr ++ ;
+  19   2          if(Tx_Ptr <= Tx_Tail) {
+  20   3            SBUF = Tx_Buffer[Tx_Ptr];
+  21   3          }
+  22   2        }
+  23   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     46    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
